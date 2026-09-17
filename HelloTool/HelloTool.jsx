@@ -3,7 +3,7 @@
     Pense aussi a changer le numero de version dans manifest.json.
 */
 (function (thisObj) {
-    var VERSION = "1.0.0";
+    var VERSION = "1.1.0";
 
     function buildUI(host) {
         var win = (host instanceof Panel)
@@ -17,6 +17,7 @@
 
         win.add("statictext", undefined, "HelloTool v" + VERSION);
 
+        // Bouton rouge
         var btn = win.add("button", undefined, "Créer un solide rouge");
         btn.onClick = function () {
             var comp = app.project.activeItem;
@@ -26,6 +27,19 @@
             }
             app.beginUndoGroup("HelloTool");
             comp.layers.addSolid([1, 0, 0], "Hello Solid", comp.width, comp.height, comp.pixelAspect);
+            app.endUndoGroup();
+        };
+
+        // Bouton bleu (v1.1.0)
+        var btnBleu = win.add("button", undefined, "Créer un solide bleu");
+        btnBleu.onClick = function () {
+            var comp = app.project.activeItem;
+            if (!(comp instanceof CompItem)) {
+                alert("Sélectionne d'abord une composition.");
+                return;
+            }
+            app.beginUndoGroup("HelloTool bleu");
+            comp.layers.addSolid([0, 0.4, 1], "Hello Blue", comp.width, comp.height, comp.pixelAspect);
             app.endUndoGroup();
         };
 

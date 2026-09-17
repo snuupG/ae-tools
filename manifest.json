@@ -1,9 +1,9 @@
 {
   "tools": {
     "HelloTool": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "file": "HelloTool/HelloTool.jsx",
-      "notes": "Premiere version"
+      "notes": "Ajout d'un bouton bleu"
     }
   }
 }
