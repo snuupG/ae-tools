@@ -1,0 +1,9 @@
+{
+  "tools": {
+    "HelloTool": {
+      "version": "1.0.0",
+      "file": "HelloTool/HelloTool.jsx",
+      "notes": "Premiere version"
+    }
+  }
+}
