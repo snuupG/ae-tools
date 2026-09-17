@@ -1,2 +1,2 @@
 # ae-tools
-scitps AE créé avec Claude
+My AE scrips create with Claude
