@@ -3,12 +3,17 @@
     "HelloTool": {
       "version": "1.1.0",
       "file": "HelloTool/HelloTool.jsx",
-      "notes": "Ajout d'un bouton solide bleu"
+      "notes": "Adding new blue buton"
     },
     "QuickLabels": {
       "version": "1.0.0",
       "file": "QuickLabels/QuickLabels.jsx",
-      "notes": "Premiere version"
+      "notes": "Add new script QuickLabels"
+    },
+    "SafeZones": {
+      "version": "1.0",
+      "file": "SafeZones/SafeZones.jsx",
+      "notes": "Add new script SafeZones"
     }
   }
 }
