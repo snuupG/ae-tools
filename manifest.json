@@ -1,10 +1,5 @@
 {
   "tools": {
-    "HelloTool": {
-      "version": "1.1.0",
-      "file": "HelloTool/HelloTool.jsx",
-      "notes": "Adding new blue buton"
-    },
     "QuickLabels": {
       "version": "1.0.0",
       "file": "QuickLabels/QuickLabels.jsx",
