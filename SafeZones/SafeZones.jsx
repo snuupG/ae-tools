@@ -1,6 +1,6 @@
 ﻿/**
  * SAFE ZONES — After Effects ScriptUI Panel
- * v1.1
+ * v1.2
  *
  * Generates a platform safe-zone overlay as a single shape layer in the
  * active comp: the unsafe area is filled, the safe area stays clear. Created
@@ -10,6 +10,11 @@
  *   Loaded automatically by the loader _loaders/SafeZones.jsx
  *   (GitHub repo snuupG/ae-tools). To publish an update: bump VERSION below
  *   AND the version in manifest.json, then Commit + Push.
+ *
+ * CHANGELOG v1.2
+ *   - Platform list reordered and renamed. Removed Instagram Story and
+ *     Snapchat Spotlight, merged the two YouTube 16:9 presets (title safe),
+ *     added Instagram 4:5 and Linkedin.
  *
  * CHANGELOG v1.1
  *   - Simplified: one shape layer only. Removed the safe-area outline, the
@@ -25,7 +30,7 @@
     // ---------------------------------------------------------------------
 
     var SCRIPT_NAME = "Safe Zones";
-    var VERSION = "1.1";
+    var VERSION = "1.2";
     var PREFIX = "[SZ] ";
     var SETTINGS_SECTION = "SafeZonesPanel";
 
@@ -48,58 +53,56 @@
     // ---------------------------------------------------------------------
 
     var SAFE_ZONES = [
+        // [MESURE on OFFICIEL template] TikTok Ads Manager Help, In-Feed
+        // Standard Version LTR (720x1280, scaled x1.5). Safe rect
+        // x 120 -> 960, y 240 -> 1260, plus button column x > 780 for y >= 840.
+        { name: "Tiktok", ref: [1080, 1920],
+          top: 240, bottom: 660, left: 120, right: 120,
+          rail: { right: 300, fromY: 840 } },
+
         // [OFFICIEL] Meta Ads Guide, Instagram Reels ad specs: 14% top,
         // 35% bottom, 6% each side. Safe rect x 65 -> 1015, y 269 -> 1248.
         // The like/comment/share rail sits on the right of the bottom zone:
         // avoid text hugging the right edge in the lower third.
-        { name: "Instagram / Facebook - Reels", ref: [1080, 1920],
+        { name: "Instagram - Reels", ref: [1080, 1920],
           top: 269, bottom: 672, left: 65, right: 65, rail: null },
 
-        // [OFFICIEL / reprises multiples] 14% top, ~20% bottom (sticker /
-        // reply zone), 6% sides. Safe rect x 65 -> 1015, y 269 -> 1536.
-        // If one master serves Stories + Reels, use the Reels zone.
-        { name: "Instagram / Facebook - Story", ref: [1080, 1920],
-          top: 269, bottom: 384, left: 65, right: 65, rail: null },
+        // [CONSENSUS] No UI sits on a feed post. The profile grid crops every
+        // thumbnail to 3:4 centered (Jan 2025), so a 1080x1350 post loses
+        // ~34px per side. 60px sides cover that crop; top / bottom are
+        // breathing room (bottom slightly larger for the tag / mute icons).
+        { name: "Instagram - 4:5", ref: [1080, 1350],
+          top: 60, bottom: 90, left: 60, right: 60, rail: null },
 
-        // [MESURE on OFFICIEL template] TikTok Ads Manager Help, In-Feed
-        // Standard Version LTR (720x1280, scaled x1.5). Safe rect
-        // x 120 -> 960, y 240 -> 1260, plus button column x > 780 for y >= 840.
-        { name: "TikTok", ref: [1080, 1920],
-          top: 240, bottom: 660, left: 120, right: 120,
-          rail: { right: 300, fromY: 840 } },
+        // [CONSENSUS] 150px top (name / headline), 150px bottom (swipe-up /
+        // action zone). Safe rect x 0 -> 1080, y 150 -> 1770.
+        { name: "Snapchat", ref: [1080, 1920],
+          top: 150, bottom: 150, left: 0, right: 0, rail: null },
+
+        // [CONSENSUS] LinkedIn publishes no safe zone. Values from third-party
+        // checkers (aicarousels, AdKit): 108 top, 320 bottom (caption),
+        // 60 left, 120 right (action rail). Safe rect x 60 -> 960, y 108 -> 1600.
+        { name: "Linkedin", ref: [1080, 1920],
+          top: 108, bottom: 320, left: 60, right: 120, rail: null },
 
         // [OFFICIEL] Google Ads Help, "Safe zones for vertical video ads on
         // YouTube". Right margin = like/dislike/comment/share rail.
         // Safe rect x 48 -> 888, y 288 -> 1248. Not centered on x = 540.
-        { name: "YouTube - Shorts", ref: [1080, 1920],
+        { name: "Youtube - Short", ref: [1080, 1920],
           top: 288, bottom: 672, left: 48, right: 192, rail: null },
 
-        // [CONSENSUS] 150px top (name / headline), 150px bottom (swipe-up /
-        // action zone). Safe rect x 0 -> 1080, y 150 -> 1770.
-        { name: "Snapchat - Stories", ref: [1080, 1920],
-          top: 150, bottom: 150, left: 0, right: 0, rail: null },
-
-        // Spotlight is a TikTok-like feed (right rail + creator info at the
-        // bottom), not quantified officially: treated as TikTok.
-        { name: "Snapchat - Spotlight", ref: [1080, 1920],
-          top: 240, bottom: 660, left: 120, right: 120,
-          rail: { right: 300, fromY: 840 } },
-
-        // Intersection of the strictest values above (one master for all):
-        // top/right YT Shorts, bottom Meta Reels / YT Shorts, left TikTok,
-        // plus the TikTok button column. Safe rect x 120 -> 888, y 288 -> 1248.
-        { name: "Universal 9:16", ref: [1080, 1920],
-          top: 288, bottom: 672, left: 120, right: 192,
-          rail: { right: 300, fromY: 840 } },
-
         // [norme SMPTE] Title safe 90%: texts and subtitles stay inside.
-        // Safe rect x 96 -> 1824, y 54 -> 1026.
-        { name: "YouTube 16:9 - Title safe", ref: [1920, 1080],
+        // Safe rect x 96 -> 1824, y 54 -> 1026. (Action safe 93% would be
+        // 67 / 38 px - title safe is the stricter of the two.)
+        { name: "Youtube - 16:9", ref: [1920, 1080],
           top: 54, bottom: 54, left: 96, right: 96, rail: null },
 
-        // [norme SMPTE] Action safe 93%. Safe rect x 67 -> 1853, y 38 -> 1042.
-        { name: "YouTube 16:9 - Action safe", ref: [1920, 1080],
-          top: 38, bottom: 38, left: 67, right: 67, rail: null }
+        // Intersection of the strictest 9:16 values (one master for all):
+        // top/right YT Shorts, bottom Meta Reels / YT Shorts, left TikTok,
+        // plus the TikTok button column. Safe rect x 120 -> 888, y 288 -> 1248.
+        { name: "Universal - 9:16", ref: [1080, 1920],
+          top: 288, bottom: 672, left: 120, right: 192,
+          rail: { right: 300, fromY: 840 } }
     ];
 
     // ---------------------------------------------------------------------
