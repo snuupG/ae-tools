@@ -17,7 +17,7 @@
 (function QuickLabels(thisObj) {
 
     var SCRIPT_NAME = "Quick Labels";
-    var VERSION = "1.1.0";
+    var VERSION = "1.1";
     var BTN = 22;
     var SEL_W = 36;   // largeur du bouton "Sel"
     var GAP = 2;      // espace entre les boutons
