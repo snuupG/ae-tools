@@ -17,8 +17,11 @@
 (function QuickLabels(thisObj) {
 
     var SCRIPT_NAME = "Quick Labels";
-    var VERSION = "1.0.0";
+    var VERSION = "1.1.0";
     var BTN = 22;
+    var SEL_W = 36;   // largeur du bouton "Sel"
+    var GAP = 2;      // espace entre les boutons
+    var MARGIN = 4;   // marge autour du panneau
 
     // ------------------------------------------------------------------
     // Couleurs par défaut d'After Effects (utilisées si la lecture des prefs échoue)
@@ -237,12 +240,12 @@
 
         win.orientation = "row";
         win.alignChildren = ["left", "top"];
-        win.spacing = 4;
-        win.margins = 4;
+        win.spacing = GAP;
+        win.margins = MARGIN;
 
-        var swatches = win.add("group");
-        swatches.orientation = "row";
-        swatches.spacing = 2;
+        // Tous les boutons sont des enfants directs du panneau : reflow() les
+        // place lui-même, en "flux" (comme du texte qui revient à la ligne).
+        var cells = [];
 
         var labels = getLabels();
         // Ordre : couleurs 1 → 16, puis "Aucun" à la fin
@@ -252,27 +255,54 @@
 
         for (var k = 0; k < order.length; k++) {
             var lab = labels[order[k]];
-            var b = swatches.add("button", undefined, "");
+            var b = win.add("button", undefined, "");
             b.preferredSize = [BTN, BTN];
             b.labelIndex = lab.index;
             b.rgb = lab.rgb;
             b.helpTip = lab.name + "\nAlt + clic : sélectionner ce groupe";
             b.onDraw = drawSwatch;
             b.onClick = function () { applyLabel(this.labelIndex); };
+            cells.push(b);
         }
 
         var selBtn = win.add("button", undefined, "Sel");
-        selBtn.preferredSize = [36, BTN];
+        selBtn.preferredSize = [SEL_W, BTN];
         selBtn.helpTip = "Sélectionne tous les calques ayant le même label que la sélection\n" + SCRIPT_NAME + " v" + VERSION;
         selBtn.onClick = selectSameLabelGroup;
+        cells.push(selBtn);
 
-        // Bascule horizontal / vertical selon la forme du panneau
-        win.onResizing = win.onResize = function () {
-            var vertical = this.size.height > this.size.width;
-            this.orientation = vertical ? "column" : "row";
-            swatches.orientation = vertical ? "column" : "row";
-            this.layout.layout(true);
-        };
+        // Disposition responsive : on remplit chaque ligne jusqu'à la largeur
+        // du panneau, puis on passe à la ligne suivante.
+        //   panneau large  -> une seule ligne
+        //   panneau étroit -> une seule colonne
+        //   entre les deux -> une grille
+        function reflow() {
+            var W = win.size ? win.size.width : 0;
+            var x = MARGIN, y = MARGIN;
+            for (var c = 0; c < cells.length; c++) {
+                var w = cells[c].preferredSize.width;
+                if (x > MARGIN && x + w > W - MARGIN) {
+                    x = MARGIN;
+                    y += BTN + GAP;
+                }
+                cells[c].size = [w, BTN];
+                cells[c].location = [x, y];
+                x += w + GAP;
+            }
+        }
+
+        // Le layout automatique de ScriptUI peut se relancer tout seul (dock,
+        // changement d'espace de travail) : on repasse derrière à chaque fois.
+        try {
+            var lm = win.layout;
+            var autoLayout = lm.layout;
+            lm.layout = function (recalc) {
+                autoLayout.call(lm, recalc);
+                reflow();
+            };
+        } catch (e) {}
+
+        win.onResizing = win.onResize = reflow;
 
         win.layout.layout(true);
         return win;

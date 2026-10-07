@@ -1,9 +1,9 @@
 {
   "tools": {
     "QuickLabels": {
-      "version": "1.0.0",
+      "version": "1.1.0",
       "file": "QuickLabels/QuickLabels.jsx",
-      "notes": "Add new script QuickLabels"
+      "notes": "Panneau responsive : les couleurs se rangent en ligne, en colonne ou en grille selon la forme du panneau"
     },
     "SafeZones": {
       "version": "1.2",
