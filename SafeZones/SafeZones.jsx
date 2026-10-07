@@ -1,22 +1,21 @@
 ﻿/**
  * SAFE ZONES — After Effects ScriptUI Panel
- * v1.0
+ * v1.1
  *
- * Generates a platform safe-zone overlay as a shape layer in the active comp:
- * the unsafe area is filled, the safe area is outlined. Created as a GUIDE
- * LAYER, so it shows in the viewer and never renders on export.
+ * Generates a platform safe-zone overlay as a single shape layer in the
+ * active comp: the unsafe area is filled, the safe area stays clear. Created
+ * as a GUIDE LAYER, so it shows in the viewer and never renders on export.
  *
  * DISTRIBUTION
  *   Loaded automatically by the loader _loaders/SafeZones.jsx
  *   (GitHub repo snuupG/ae-tools). To publish an update: bump VERSION below
  *   AND the version in manifest.json, then Commit + Push.
  *
- * CHANGELOG v2.5
- *   - TikTok values verified against the official In-Feed safe zone template
- *     downloaded from TikTok Ads Manager Help (2880x5120 RGBA). Margins read
- *     from the alpha channel: the fully transparent region is the safe area.
- *     Top / bottom / sides / rail width all confirmed exact. The rail START
- *     was wrong by 120px and is now corrected.
+ * CHANGELOG v1.1
+ *   - Simplified: one shape layer only. Removed the safe-area outline, the
+ *     text label and the "Frame" option (the overlay always covers the comp).
+ *   - Safe zone values updated from "Safe zones social media - organique"
+ *     (The Source, 07/10/2026).
  */
 
 (function (thisObj) {
@@ -26,83 +25,81 @@
     // ---------------------------------------------------------------------
 
     var SCRIPT_NAME = "Safe Zones";
-    var VERSION = "1.0";
+    var VERSION = "1.1";
     var PREFIX = "[SZ] ";
     var SETTINGS_SECTION = "SafeZonesPanel";
 
     // ---------------------------------------------------------------------
     // SAFE ZONES
     // Margins in pixels, relative to the "ref" resolution. Converted to ratios
-    // internally, so they hold at any comp size.
+    // internally, so they hold at any comp size with the same aspect ratio.
     //
-    // "rail" = the action rail, which reaches higher than the caption block.
-    // Below fromY the right margin widens to rail.right. That is what makes the
-    // safe area an L rather than a rectangle.
+    // "rail" = the action rail on the right. Below fromY the right margin
+    // widens to rail.right, which makes the safe area an L instead of a
+    // rectangle.
     //
-    // Sourcing (checked 2026-08-07, https://www.solidlabs.com/social-safe-zones):
-    //   measured  = read from the platform's own template alpha channel
-    //   published = quoted from platform documentation
-    //   no spec   = platform publishes nothing; comfort margins, ours
-    //
-    // Every published safe zone is scoped to ADS. No platform publishes an
-    // organic one. Organic posts carry no CTA button and no Sponsored label, so
-    // their real bottom margin is smaller - these are conservative for organic,
-    // which is the safe direction to be wrong in.
+    // Source: "Safe zones social media - organique" (The Source, 07/10/2026).
+    // No platform publishes an organic safe zone. Official numbers only exist
+    // in the Ads docs; organic UI = Ads UI minus the ad elements, so Ads
+    // margins are the most solid reference and slightly conservative.
+    //   [OFFICIEL]  = published by the platform (Ads docs)
+    //   [MESURE]    = measured on an official template / preview
+    //   [CONSENSUS] = repeated by creator / agency sources, no platform source
     // ---------------------------------------------------------------------
 
     var SAFE_ZONES = [
-        // VERIFIED - read from the alpha channel of TikTok's official In-Feed
-        // safe zone template (Ads Manager Help, 2880x5120 RGBA, scale 1:2.6667).
-        // Transparent region = safe area. Every margin below is exact.
-        //   left/right 120px : NOT a UI margin - this is the device crop guard.
-        //     A 9:16 asset on a 19.5:9 phone is scaled to fill and cropped
-        //     sideways (measured: 98px per side on an iPhone 16 Pro).
-        //   bottom 660px : covers the caption at full expansion. The collapsed
-        //     two-line state measures ~330px on a real device.
-        //   rail : right margin widens to 300px from y=840 (43.75% height).
+        // [OFFICIEL] Meta Ads Guide, Instagram Reels ad specs: 14% top,
+        // 35% bottom, 6% each side. Safe rect x 65 -> 1015, y 269 -> 1248.
+        // The like/comment/share rail sits on the right of the bottom zone:
+        // avoid text hugging the right edge in the lower third.
+        { name: "Instagram / Facebook - Reels", ref: [1080, 1920],
+          top: 269, bottom: 672, left: 65, right: 65, rail: null },
+
+        // [OFFICIEL / reprises multiples] 14% top, ~20% bottom (sticker /
+        // reply zone), 6% sides. Safe rect x 65 -> 1015, y 269 -> 1536.
+        // If one master serves Stories + Reels, use the Reels zone.
+        { name: "Instagram / Facebook - Story", ref: [1080, 1920],
+          top: 269, bottom: 384, left: 65, right: 65, rail: null },
+
+        // [MESURE on OFFICIEL template] TikTok Ads Manager Help, In-Feed
+        // Standard Version LTR (720x1280, scaled x1.5). Safe rect
+        // x 120 -> 960, y 240 -> 1260, plus button column x > 780 for y >= 840.
         { name: "TikTok", ref: [1080, 1920],
           top: 240, bottom: 660, left: 120, right: 120,
           rail: { right: 300, fromY: 840 } },
 
-        // published - "leave at least 14% of the top, 35% of the bottom and 6%
-        // on each side". Rail notch measured from Meta's diagram: the right 21%
-        // is unsafe down to 40% of the height.
-        { name: "Instagram - Reels", ref: [1080, 1920],
-          top: 269, bottom: 672, left: 65, right: 65,
-          rail: { right: 227, fromY: 1152 } },
+        // [OFFICIEL] Google Ads Help, "Safe zones for vertical video ads on
+        // YouTube". Right margin = like/dislike/comment/share rail.
+        // Safe rect x 48 -> 888, y 288 -> 1248. Not centered on x = 540.
+        { name: "YouTube - Shorts", ref: [1080, 1920],
+          top: 288, bottom: 672, left: 48, right: 192, rail: null },
 
-        // no spec - Meta says keep the bottom and sides clear but publishes no
-        // number. No UI sits on the creative in feed; this is breathing room.
-        { name: "Instagram - 4:5", ref: [1080, 1350],
-          top: 60, bottom: 90, left: 60, right: 60, rail: null },
-
-        // published - since March 2026 Meta governs Stories and Reels with a
-        // single 9:16 safe zone, so these numbers are identical to Reels above.
-        // The 14% / 20% still quoted for Stories is the stale pre-2026 figure.
-        { name: "Instagram - Story", ref: [1080, 1920],
-          top: 269, bottom: 672, left: 65, right: 65,
-          rail: { right: 227, fromY: 1152 } },
-
-        // published - "avoid the top 10%, the bottom 25%, the right-hand 10%".
-        // Google specifies no left margin. Valid for Shorts-only delivery; an
-        // asset also serving in-stream needs 288/672/48/192.
-        { name: "Youtube - Shorts", ref: [1080, 1920],
-          top: 192, bottom: 480, left: 0, right: 108, rail: null },
-
-        // no spec - progress bar and controls at the bottom, title and buttons
-        // at the top when paused. Comfort margins, ours.
-        { name: "Youtube - 16:9", ref: [1920, 1080],
-          top: 90, bottom: 130, left: 90, right: 90, rail: null },
-
-        // published but stale - the Snap Ads PDF carries a 2017 creation date
-        // and still lists 3-10s ads. The current specs page publishes no pixels.
-        { name: "Snapchat", ref: [1080, 1920],
+        // [CONSENSUS] 150px top (name / headline), 150px bottom (swipe-up /
+        // action zone). Safe rect x 0 -> 1080, y 150 -> 1770.
+        { name: "Snapchat - Stories", ref: [1080, 1920],
           top: 150, bottom: 150, left: 0, right: 0, rail: null },
 
-        // no spec - LinkedIn publishes resolution, file size and duration, but
-        // no safe zone. Figures quoted elsewhere are Reels' numbers reused.
-        { name: "Linkedin", ref: [1080, 1920],
-          top: 110, bottom: 230, left: 60, right: 60, rail: null }
+        // Spotlight is a TikTok-like feed (right rail + creator info at the
+        // bottom), not quantified officially: treated as TikTok.
+        { name: "Snapchat - Spotlight", ref: [1080, 1920],
+          top: 240, bottom: 660, left: 120, right: 120,
+          rail: { right: 300, fromY: 840 } },
+
+        // Intersection of the strictest values above (one master for all):
+        // top/right YT Shorts, bottom Meta Reels / YT Shorts, left TikTok,
+        // plus the TikTok button column. Safe rect x 120 -> 888, y 288 -> 1248.
+        { name: "Universal 9:16", ref: [1080, 1920],
+          top: 288, bottom: 672, left: 120, right: 192,
+          rail: { right: 300, fromY: 840 } },
+
+        // [norme SMPTE] Title safe 90%: texts and subtitles stay inside.
+        // Safe rect x 96 -> 1824, y 54 -> 1026.
+        { name: "YouTube 16:9 - Title safe", ref: [1920, 1080],
+          top: 54, bottom: 54, left: 96, right: 96, rail: null },
+
+        // [norme SMPTE] Action safe 93%. Safe rect x 67 -> 1853, y 38 -> 1042.
+        { name: "YouTube 16:9 - Action safe", ref: [1920, 1080],
+          top: 38, bottom: 38, left: 67, right: 67, rail: null }
     ];
 
     // ---------------------------------------------------------------------
@@ -304,39 +301,37 @@
     // GEOMETRY
     // ---------------------------------------------------------------------
 
-    function referenceFrame(comp, preset, mode) {
-        if (mode !== 1) {
-            return { x: 0, y: 0, w: comp.width, h: comp.height };
-        }
-        var ratio = preset.ref[0] / preset.ref[1];
-        var w, h;
-        if (comp.width / comp.height > ratio) { h = comp.height; w = h * ratio; }
-        else { w = comp.width; h = w / ratio; }
-        return { x: (comp.width - w) / 2, y: (comp.height - h) / 2, w: w, h: h };
-    }
-
-    // Safe area as a closed polygon. Six points when the platform has an action
-    // rail, four otherwise:
+    // Safe area as a closed polygon, mapped onto the full comp. Six points
+    // when the platform has an action rail, four otherwise:
     //
     //   L,T ---------------- R,T
     //    |                    |
     //    |          NR,NY --- R,NY    <- rail starts here
     //    |            |
     //   L,B -------- NR,B
-    function safePolygon(frame, preset) {
-        var L = frame.x + (preset.left / preset.ref[0]) * frame.w;
-        var R = frame.x + frame.w - (preset.right / preset.ref[0]) * frame.w;
-        var T = frame.y + (preset.top / preset.ref[1]) * frame.h;
-        var B = frame.y + frame.h - (preset.bottom / preset.ref[1]) * frame.h;
+    function safePolygon(comp, preset) {
+        var W = comp.width;
+        var H = comp.height;
+        var L = (preset.left / preset.ref[0]) * W;
+        var R = W - (preset.right / preset.ref[0]) * W;
+        var T = (preset.top / preset.ref[1]) * H;
+        var B = H - (preset.bottom / preset.ref[1]) * H;
 
         if (preset.rail) {
-            var NR = frame.x + frame.w - (preset.rail.right / preset.ref[0]) * frame.w;
-            var NY = frame.y + (preset.rail.fromY / preset.ref[1]) * frame.h;
+            var NR = W - (preset.rail.right / preset.ref[0]) * W;
+            var NY = (preset.rail.fromY / preset.ref[1]) * H;
             if (NR < R && NY > T && NY < B) {
                 return [[L, T], [R, T], [R, NY], [NR, NY], [NR, B], [L, B]];
             }
         }
         return [[L, T], [R, T], [R, B], [L, B]];
+    }
+
+    // True when the comp aspect ratio differs from the preset's by more than 1%
+    function ratioMismatch(comp, preset) {
+        var a = comp.width / comp.height;
+        var b = preset.ref[0] / preset.ref[1];
+        return Math.abs(a - b) / b > 0.01;
     }
 
     // ---------------------------------------------------------------------
@@ -371,8 +366,7 @@
     }
 
     function buildOverlay(comp, preset, opts) {
-        var frame = referenceFrame(comp, preset, opts.frameMode);
-        var poly = safePolygon(frame, preset);
+        var poly = safePolygon(comp, preset);
 
         var lay = comp.layers.addShape();
         lay.name = PREFIX + preset.name;
@@ -380,72 +374,23 @@
         tr.property("ADBE Anchor Point").setValue([0, 0]);
         tr.property("ADBE Position").setValue([0, 0]);
 
-        var root = lay.property("ADBE Root Vectors Group");
-
         // Unsafe area: full-comp rect + safe polygon in the same group, with an
         // even-odd fill rule punching the safe area out of the fill.
-        if (opts.showFill) {
-            var gFill = root.addProperty("ADBE Vector Group");
-            gFill.name = "Unsafe area";
-            var vFill = gFill.property("ADBE Vectors Group");
-            addRectPath(vFill, [comp.width / 2, comp.height / 2], [comp.width, comp.height]);
-            addPolyPath(vFill, poly);
-            var fill = vFill.addProperty("ADBE Vector Graphic - Fill");
-            try { fill.property("ADBE Vector Fill Rule").setValue(2); } catch (e) { }
-            fill.property("ADBE Vector Fill Color").setValue(opts.fillColor);
-            fill.property("ADBE Vector Fill Opacity").setValue(opts.fillOpacity);
-        }
-
-        if (opts.showStroke) {
-            var gLine = root.addProperty("ADBE Vector Group");
-            gLine.name = "Safe area";
-            var vLine = gLine.property("ADBE Vectors Group");
-            addPolyPath(vLine, poly);
-            var stroke = vLine.addProperty("ADBE Vector Graphic - Stroke");
-            stroke.property("ADBE Vector Stroke Color").setValue(opts.lineColor);
-            stroke.property("ADBE Vector Stroke Width").setValue(opts.strokeWidth);
-        }
-
-        // Reference frame outline, only when the preset ratio differs from comp
-        if (opts.frameMode === 1 && (Math.abs(frame.w - comp.width) > 1 || Math.abs(frame.h - comp.height) > 1)) {
-            var gFrame = root.addProperty("ADBE Vector Group");
-            gFrame.name = "Frame " + preset.ref[0] + "x" + preset.ref[1];
-            var vFrame = gFrame.property("ADBE Vectors Group");
-            addRectPath(vFrame, [frame.x + frame.w / 2, frame.y + frame.h / 2], [frame.w, frame.h]);
-            var st2 = vFrame.addProperty("ADBE Vector Graphic - Stroke");
-            st2.property("ADBE Vector Stroke Color").setValue(opts.lineColor);
-            st2.property("ADBE Vector Stroke Width").setValue(opts.strokeWidth * 2);
-        }
+        var root = lay.property("ADBE Root Vectors Group");
+        var gFill = root.addProperty("ADBE Vector Group");
+        gFill.name = "Unsafe area";
+        var vFill = gFill.property("ADBE Vectors Group");
+        addRectPath(vFill, [comp.width / 2, comp.height / 2], [comp.width, comp.height]);
+        addPolyPath(vFill, poly);
+        var fill = vFill.addProperty("ADBE Vector Graphic - Fill");
+        try { fill.property("ADBE Vector Fill Rule").setValue(2); } catch (e) { }
+        fill.property("ADBE Vector Fill Color").setValue(opts.fillColor);
+        fill.property("ADBE Vector Fill Opacity").setValue(opts.fillOpacity);
 
         lay.guideLayer = true;
         lay.label = opts.labelColor;
         lay.comment = "Safe zone overlay - " + SCRIPT_NAME + " v" + VERSION;
-
-        var textLay = null;
-        if (opts.showLabels) {
-            try {
-                var L = poly[0][0];
-                var T = poly[0][1];
-                textLay = comp.layers.addText(preset.name);
-                textLay.name = PREFIX + preset.name + " \u00B7 label";
-                var srcText = textLay.property("ADBE Text Properties").property("ADBE Text Document");
-                var doc = srcText.value;
-                doc.fontSize = Math.max(12, Math.round(comp.height / 55));
-                doc.applyFill = true;
-                doc.fillColor = opts.lineColor;
-                doc.applyStroke = false;
-                srcText.setValue(doc);
-                var ttr = textLay.property("ADBE Transform Group");
-                ttr.property("ADBE Anchor Point").setValue([0, 0]);
-                ttr.property("ADBE Position").setValue([L + doc.fontSize * 0.4, T + doc.fontSize * 1.3]);
-                textLay.guideLayer = true;
-                textLay.label = opts.labelColor;
-                textLay.locked = true;
-            } catch (e) { textLay = null; }
-        }
-
         lay.moveToBeginning();
-        if (textLay) { textLay.moveToBeginning(); }
         lay.locked = true;
         return lay;
     }
@@ -501,14 +446,13 @@
         win.spacing = 8;
         win.margins = 10;
 
-        var lineColor = hexToRGB(parseInt(getSetting("lineColor", "16742400"), 10));
         var fillColor = hexToRGB(parseInt(getSetting("fillColor", "0"), 10));
 
         // --- Platform
         var grpPlat = win.add("group");
         grpPlat.alignChildren = ["left", "center"];
         var lblPlat = grpPlat.add("statictext", undefined, "Platform");
-        lblPlat.preferredSize.width = 58;
+        lblPlat.preferredSize.width = 56;
         var ddPlat = grpPlat.add("dropdownlist", undefined, []);
         ddPlat.preferredSize.width = 200;
 
@@ -519,48 +463,22 @@
         }
         if (!ddPlat.selection) { ddPlat.selection = 0; }
 
-        // --- Overlay options
-        var pOpt = win.add("panel", undefined, "Overlay");
-        pOpt.orientation = "column";
-        pOpt.alignChildren = ["fill", "top"];
-        pOpt.margins = [10, 16, 10, 10];
-        pOpt.spacing = 6;
-
-        var cbFill = pOpt.add("checkbox", undefined, "Fill unsafe area");
-        cbFill.value = getSetting("showFill", "1") === "1";
-
-        var grpOpa = pOpt.add("group");
+        // --- Opacity
+        var grpOpa = win.add("group");
         grpOpa.alignChildren = ["left", "center"];
         var lblOpa = grpOpa.add("statictext", undefined, "Opacity");
         lblOpa.preferredSize.width = 56;
         var sldOpa = grpOpa.add("slider", undefined, Number(getSetting("fillOpacity", "55")), 0, 100);
-        sldOpa.preferredSize.width = 120;
+        sldOpa.preferredSize.width = 150;
         var txtOpa = grpOpa.add("statictext", undefined, "100%");
         txtOpa.preferredSize.width = 40;
 
-        var cbStroke = pOpt.add("checkbox", undefined, "Safe area outline");
-        cbStroke.value = getSetting("showStroke", "1") === "1";
-
-        var cbLabels = pOpt.add("checkbox", undefined, "Label");
-        cbLabels.value = getSetting("showLabels", "1") === "1";
-
-        var grpFrame = pOpt.add("group");
-        grpFrame.alignChildren = ["left", "center"];
-        var lblFrame = grpFrame.add("statictext", undefined, "Frame");
-        lblFrame.preferredSize.width = 56;
-        var ddFrame = grpFrame.add("dropdownlist", undefined, ["Full comp", "Preset ratio (centered)"]);
-        ddFrame.selection = Number(getSetting("frameMode", "0"));
-        ddFrame.helpTip = "Preset ratio: useful when working in 16:9 and delivering a 9:16 crop.";
-
-        var grpCol = pOpt.add("group");
+        // --- Color
+        var grpCol = win.add("group");
         grpCol.alignChildren = ["left", "center"];
-        grpCol.spacing = 8;
-        var lblCol = grpCol.add("statictext", undefined, "Colors");
+        var lblCol = grpCol.add("statictext", undefined, "Color");
         lblCol.preferredSize.width = 56;
-        grpCol.add("statictext", undefined, "Fill");
         var swFill = makeSwatchButton(grpCol, fillColor, 58, 22);
-        grpCol.add("statictext", undefined, "Line");
-        var swLine = makeSwatchButton(grpCol, lineColor, 58, 22);
 
         // --- Actions
         var grpBtn = win.add("group");
@@ -578,25 +496,14 @@
 
         function currentOptions() {
             return {
-                showFill: cbFill.value,
                 fillOpacity: Math.round(sldOpa.value),
-                showStroke: cbStroke.value,
-                showLabels: cbLabels.value,
-                frameMode: ddFrame.selection ? ddFrame.selection.index : 0,
-                lineColor: lineColor,
                 fillColor: fillColor,
-                strokeWidth: 3,
                 labelColor: 11
             };
         }
 
         function saveOptions() {
-            setSetting("showFill", cbFill.value ? "1" : "0");
             setSetting("fillOpacity", Math.round(sldOpa.value));
-            setSetting("showStroke", cbStroke.value ? "1" : "0");
-            setSetting("showLabels", cbLabels.value ? "1" : "0");
-            setSetting("frameMode", ddFrame.selection ? ddFrame.selection.index : 0);
-            setSetting("lineColor", rgbToHex(lineColor));
             setSetting("fillColor", rgbToHex(fillColor));
             if (ddPlat.selection) { setSetting("lastPreset", ddPlat.selection.text); }
         }
@@ -613,24 +520,13 @@
         sldOpa.onChanging = syncOpa;
 
         swFill.onClick = function () {
-            var c = colorDialog(fillColor, "Fill color");
+            var c = colorDialog(fillColor, "Overlay color");
             if (c) {
                 fillColor = c;
                 paintSwatch(swFill, fillColor, 58, 22);
                 redraw(swFill);
                 setSetting("fillColor", rgbToHex(fillColor));
-                say("Fill color: #" + rgbToHexString(fillColor));
-            }
-        };
-
-        swLine.onClick = function () {
-            var c = colorDialog(lineColor, "Line color");
-            if (c) {
-                lineColor = c;
-                paintSwatch(swLine, lineColor, 58, 22);
-                redraw(swLine);
-                setSetting("lineColor", rgbToHex(lineColor));
-                say("Line color: #" + rgbToHexString(lineColor));
+                say("Color: #" + rgbToHexString(fillColor));
             }
         };
 
@@ -645,7 +541,11 @@
                 removeOverlays(comp);
                 buildOverlay(comp, preset, currentOptions());
                 saveOptions();
-                say(preset.name + " applied.");
+                if (ratioMismatch(comp, preset)) {
+                    say(preset.name + " applied - comp is not " + preset.ref[0] + "x" + preset.ref[1] + " ratio.");
+                } else {
+                    say(preset.name + " applied.");
+                }
             } catch (err) {
                 say("Error: " + err.toString());
             }
