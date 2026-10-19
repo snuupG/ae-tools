@@ -6,10 +6,11 @@ Petits scripts After Effects pour gagner du temps.
 |---|---|
 | **SafeZones** | Affiche la safe zone d'une plateforme (TikTok, Reels, Shorts…) sur la comp active. C'est un calque guide, il ne sort pas au rendu. |
 | **QuickLabels** | Applique une couleur de label en un clic (keyframes, calques ou éléments du Projet). Alt + clic sélectionne tous les calques de cette couleur. |
+| **snuupTools** | Mini barre de boutons : purger le cache, ajouter à la file de rendu, Bake Group Scale, poser des repères sur un calque, créer un null parent (Shift / Cmd / Alt pour les variantes, voir l'infobulle). |
 
 ## Installation (une seule fois)
 
-1. Télécharge le loader de l'outil voulu dans le dossier [`_loaders`](_loaders) (`SafeZones.jsx`, `QuickLabels.jsx`).
+1. Télécharge le loader de l'outil voulu dans le dossier [`_loaders`](_loaders) (`SafeZones.jsx`, `QuickLabels.jsx`, `snuupTools.jsx`).
 2. Copie-le dans le dossier **ScriptUI Panels** d'After Effects :
    - **Mac** : `Applications/Adobe After Effects <version>/Scripts/ScriptUI Panels/`
    - **Windows** : `C:\Program Files\Adobe\Adobe After Effects <version>\Support Files\Scripts\ScriptUI Panels\`

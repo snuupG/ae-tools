@@ -9,6 +9,11 @@
       "version": "1.2",
       "file": "SafeZones/SafeZones.jsx",
       "notes": "Liste des plateformes reorganisee : Tiktok, Instagram Reels / 4:5, Snapchat, Linkedin, Youtube Short / 16:9, Universal 9:16"
+    },
+    "snuupTools": {
+      "version": "1.0",
+      "file": "snuupTools/snuupTools.jsx",
+      "notes": "Nouveau : purge, file de rendu, Bake Group Scale, repères, null"
     }
   }
 }
